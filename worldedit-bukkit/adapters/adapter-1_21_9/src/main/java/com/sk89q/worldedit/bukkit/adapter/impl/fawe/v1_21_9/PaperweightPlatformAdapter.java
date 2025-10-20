@@ -320,17 +320,11 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
         } else {
             LevelChunk nmsChunk = serverLevel.getChunkSource().getChunkAtIfCachedImmediately(chunkX, chunkZ);
             if (nmsChunk != null) {
-                addTicket(serverLevel, chunkX, chunkZ);
                 return nmsChunk;
             }
             nmsChunk = serverLevel.getChunkSource().getChunkAtIfLoadedImmediately(chunkX, chunkZ);
             if (nmsChunk != null) {
-                addTicket(serverLevel, chunkX, chunkZ);
                 return nmsChunk;
-            }
-            // Avoid "async" methods from the main thread.
-            if (Fawe.isMainThread()) {
-                return serverLevel.getChunk(chunkX, chunkZ);
             }
             return null;
         }

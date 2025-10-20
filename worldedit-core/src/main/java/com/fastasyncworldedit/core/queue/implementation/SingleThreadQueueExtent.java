@@ -17,6 +17,7 @@ import com.fastasyncworldedit.core.queue.IQueueExtent;
 import com.fastasyncworldedit.core.queue.implementation.blocks.CharSetBlocks;
 import com.fastasyncworldedit.core.queue.implementation.chunk.ChunkHolder;
 import com.fastasyncworldedit.core.queue.implementation.chunk.NullChunk;
+import com.fastasyncworldedit.core.util.FoliaSupport;
 import com.fastasyncworldedit.core.util.MathMan;
 import com.fastasyncworldedit.core.util.MemUtil;
 import com.fastasyncworldedit.core.wrappers.WorldWrapper;
@@ -396,6 +397,21 @@ public class SingleThreadQueueExtent extends ExtentBatchProcessorHolder implemen
     }
 
     private void pollSubmissions(int targetSize, boolean aggressive) {
+        if (FoliaSupport.isFolia()) {
+            while (submissions.size() > targetSize) {
+                Future next = submissions.peek();
+                if (next != null && next.isDone()) {
+                    submissions.poll();
+                    try {
+                        next.get();
+                    } catch (Exception ignored) {
+                    }
+                } else {
+                    break;
+                }
+            }
+            return;
+        }
         final int overflow = submissions.size() - targetSize;
         if (aggressive) {
             if (targetSize == 0) {
@@ -432,11 +448,6 @@ public class SingleThreadQueueExtent extends ExtentBatchProcessorHolder implemen
                                 }
                             }
                         } finally {
-                            /*
-                             * If the execution failed, namely next.get() threw an exception,
-                             * we don't want to process that Future again. Instead, we just drop
-                             * it and set it to null, otherwise to the returned next Future.
-                             */
                             next = after;
                         }
                     } else {
@@ -449,6 +460,13 @@ public class SingleThreadQueueExtent extends ExtentBatchProcessorHolder implemen
     }
 
     private void iterateSubmissions() {
+        if (FoliaSupport.isFolia()) {
+            Future first = submissions.poll();
+            if (first != null && !first.isDone()) {
+                submissions.add(first);
+            }
+            return;
+        }
         Future first = submissions.poll();
         try {
             while (first != null) {

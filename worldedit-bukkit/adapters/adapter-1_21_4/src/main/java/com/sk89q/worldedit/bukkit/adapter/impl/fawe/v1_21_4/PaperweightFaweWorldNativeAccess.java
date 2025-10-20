@@ -58,9 +58,15 @@ public class PaperweightFaweWorldNativeAccess implements WorldNativeAccess<Level
     public PaperweightFaweWorldNativeAccess(PaperweightFaweAdapter paperweightFaweAdapter, WeakReference<Level> level) {
         this.paperweightFaweAdapter = paperweightFaweAdapter;
         this.level = level;
-        // Use the actual tick as minecraft-defined so we don't try to force blocks into the world when the server's already lagging.
-        //  - With the caveat that we don't want to have too many cached changed (1024) so we'd flush those at 1024 anyway.
-        this.lastTick = new AtomicInteger(MinecraftServer.currentTick);
+        this.lastTick = new AtomicInteger(getCurrentTick());
+    }
+
+    private static int getCurrentTick() {
+        try {
+            return MinecraftServer.currentTick;
+        } catch (NoSuchFieldError | UnsupportedOperationException e) {
+            return (int) (System.currentTimeMillis() / 50);
+        }
     }
 
     private Level getLevel() {
@@ -96,7 +102,7 @@ public class PaperweightFaweWorldNativeAccess implements WorldNativeAccess<Level
             LevelChunk levelChunk, BlockPos blockPos,
             net.minecraft.world.level.block.state.BlockState blockState
     ) {
-        int currentTick = MinecraftServer.currentTick;
+        int currentTick = getCurrentTick();
         if (Fawe.isMainThread()) {
             return levelChunk.setBlockState(blockPos, blockState,
                     this.sideEffectSet != null && this.sideEffectSet.shouldApply(SideEffect.UPDATE)

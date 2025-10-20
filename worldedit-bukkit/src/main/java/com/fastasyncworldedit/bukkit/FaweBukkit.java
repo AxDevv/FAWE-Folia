@@ -11,6 +11,7 @@ import com.fastasyncworldedit.bukkit.regions.ResidenceFeature;
 import com.fastasyncworldedit.bukkit.regions.TownyFeature;
 import com.fastasyncworldedit.bukkit.regions.WorldGuardFeature;
 import com.fastasyncworldedit.bukkit.util.BukkitTaskManager;
+import com.fastasyncworldedit.bukkit.util.FoliaTaskManager;
 import com.fastasyncworldedit.bukkit.util.ItemUtil;
 import com.fastasyncworldedit.bukkit.util.image.BukkitImageViewer;
 import com.fastasyncworldedit.core.FAWEPlatformAdapterImpl;
@@ -21,6 +22,7 @@ import com.fastasyncworldedit.core.queue.implementation.QueueHandler;
 import com.fastasyncworldedit.core.queue.implementation.preloader.AsyncPreloader;
 import com.fastasyncworldedit.core.queue.implementation.preloader.Preloader;
 import com.fastasyncworldedit.core.regions.FaweMaskManager;
+import com.fastasyncworldedit.core.util.FoliaSupport;
 import com.fastasyncworldedit.core.util.TaskManager;
 import com.fastasyncworldedit.core.util.WEManager;
 import com.fastasyncworldedit.core.util.image.ImageViewer;
@@ -55,6 +57,7 @@ import java.util.function.Supplier;
 public class FaweBukkit implements IFawe, Listener {
 
     private static final Logger LOGGER = LogManagerCompat.getLogger();
+    private static final Thread startingThread = Thread.currentThread();
 
     private final Plugin plugin;
     private final FAWEPlatformAdapterImpl platformAdapter;
@@ -72,7 +75,7 @@ public class FaweBukkit implements IFawe, Listener {
             } catch (Throwable e) {
                 LOGGER.error("Brush Listener Failed", e);
             }
-            if (PaperLib.isPaper() && Settings.settings().EXPERIMENTAL.DYNAMIC_CHUNK_RENDERING > 1) {
+            if (!FoliaSupport.isFolia() && PaperLib.isPaper() && Settings.settings().EXPERIMENTAL.DYNAMIC_CHUNK_RENDERING > 1) {
                 new RenderListener(plugin);
             }
         } catch (final Throwable e) {
@@ -172,6 +175,11 @@ public class FaweBukkit implements IFawe, Listener {
      */
     @Override
     public TaskManager getTaskManager() {
+        if (FoliaSupport.isFolia()) {
+            LOGGER.info("Folia detected! Using FoliaTaskManager");
+            return new FoliaTaskManager();
+        }
+        LOGGER.info("Using BukkitTaskManager (Paper/Spigot)");
         return new BukkitTaskManager(plugin);
     }
 
@@ -299,6 +307,14 @@ public class FaweBukkit implements IFawe, Listener {
             LOGGER.error("Incompatible version of PlotSquared found. Please use PlotSquared v7.");
             LOGGER.info("https://www.spigotmc.org/resources/77506/");
         }
+    }
+
+    @Override
+    public boolean isTickThread() {
+        if (FoliaSupport.isFolia()) {
+            return FoliaSupport.isTickThread();
+        }
+        return Thread.currentThread() == startingThread;
     }
 
 }

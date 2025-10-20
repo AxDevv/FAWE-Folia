@@ -74,10 +74,7 @@ public class MinecraftVersion implements Comparable<MinecraftVersion> {
         int minor;
         int release;
         if (PaperLib.isPaper()) {
-            // Snapshots, pre-releases, release candidates have a space after the version.
-            // Let's ignore that here
-            String minecraftVersion = Bukkit.getMinecraftVersion().split(" ")[0];
-            String[] parts = minecraftVersion.split(Pattern.quote("."));
+            String[] parts = Bukkit.getMinecraftVersion().split(Pattern.quote("."));
             if (parts.length != 2 && parts.length != 3) {
                 throw new IllegalStateException("Failed to determine minecraft version!");
             }

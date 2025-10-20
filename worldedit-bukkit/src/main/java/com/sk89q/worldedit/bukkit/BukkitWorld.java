@@ -22,6 +22,7 @@ package com.sk89q.worldedit.bukkit;
 import com.fastasyncworldedit.bukkit.util.WorldUnloadedException;
 import com.fastasyncworldedit.core.Fawe;
 import com.fastasyncworldedit.core.FaweCache;
+import com.fastasyncworldedit.core.util.FoliaSupport;
 import com.fastasyncworldedit.core.configuration.Settings;
 import com.fastasyncworldedit.core.internal.exception.FaweException;
 import com.fastasyncworldedit.core.nbt.FaweCompoundTag;
@@ -358,11 +359,11 @@ public class BukkitWorld extends AbstractWorld {
 
     @Override
     public void checkLoadedChunk(BlockVector3 pt) {
-        //FAWE start - safe edit region
         testCoords(pt);
-        //FAWE end
+        if (FoliaSupport.isFolia()) {
+            return;
+        }
         World world = getWorld();
-        //FAWE start
         int X = pt.x() >> 4;
         int Z = pt.z() >> 4;
         if (Fawe.isMainThread()) {
@@ -370,7 +371,6 @@ public class BukkitWorld extends AbstractWorld {
         } else if (PaperLib.isPaper()) {
             PaperLib.getChunkAtAsync(world, X, Z, true);
         }
-        //FAWE end
     }
 
     @Override

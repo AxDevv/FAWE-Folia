@@ -54,4 +54,8 @@ public interface IFawe {
 
     FAWEPlatformAdapterImpl getPlatformAdapter();
 
+    default boolean isTickThread() {
+        return true;
+    }
+
 }
