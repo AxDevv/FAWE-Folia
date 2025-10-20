@@ -262,9 +262,6 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
     }
 
     public static CompletableFuture<LevelChunk> ensureLoaded(ServerLevel serverLevel, int chunkX, int chunkZ) {
-        if (PaperLib.isPaper() && FoliaSupport.isFolia()) {
-            return CompletableFuture.supplyAsync(() -> TaskManager.taskManager().sync(() -> serverLevel.getChunk(chunkX, chunkZ)));
-        }
         if (PaperLib.isPaper()) {
             LevelChunk levelChunk = getChunkImmediatelyAsync(serverLevel, chunkX, chunkZ);
             if (levelChunk != null) {
@@ -274,7 +271,9 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
                     .getWorld()
                     .getChunkAtAsync(chunkX, chunkZ, true, true)
                     .thenApply(chunk -> {
-                        addTicket(serverLevel, chunkX, chunkZ);
+                        if (!FoliaSupport.isFolia()) {
+                            addTicket(serverLevel, chunkX, chunkZ);
+                        }
                         try {
                             return toLevelChunk(chunk);
                         } catch (Throwable e) {
@@ -296,6 +295,11 @@ public final class PaperweightPlatformAdapter extends NMSAdapter {
                         e
                 );
             }
+        }
+        if (FoliaSupport.isFolia()) {
+            CompletableFuture<LevelChunk> future = new CompletableFuture<>();
+            future.completeExceptionally(new UnsupportedOperationException("Cannot sync load chunks on Folia"));
+            return future;
         }
         return CompletableFuture.supplyAsync(() -> TaskManager.taskManager().sync(() -> serverLevel.getChunk(chunkX, chunkZ)));
     }
